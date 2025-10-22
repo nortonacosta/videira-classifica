@@ -10,13 +10,14 @@ import plotly.express as px
 
 @st.cache_resource
 def carrega_modelo():
-    #https://drive.google.com/file/d/1Ck0fIdSIMbkGuCwZ4h-lUwW4mT7hmf0u/view?usp=drive_link
+    # https://drive.google.com/file/d/1Ck0fIdSIMbkGuCwZ4h-lUwW4mT7hmf0u/view?usp=drive_link
     url = "https://drive.google.com/uc?id=1Ck0fIdSIMbkGuCwZ4h-lUwW4mT7hmf0u"
 
-    gdown.download(url, 'modelo_quantizado16bits.tflite')
+    gdown.download(url, 'modelo_quantizado16bits.tflite', quiet=False)
     interpreter = tf.lite.Interpreter(model_path='modelo_quantizado16bits.tflite')
     interpreter.allocate_tensors()
     return interpreter
+
 
 def carrega_imagem():
     uploaded_file = st.file_uploader('Arraste e solte uma imagem aqui ou clique para selecionar uma', type=['png', 'jpg', 'jpeg'])
@@ -34,46 +35,47 @@ def carrega_imagem():
 
         return image
 
-def previsao(interpreter, image):
 
+def previsao(interpreter, image):
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
     
-    interpreter.set_tensor(input_details[0]['index'],imagem) 
-    
+    interpreter.set_tensor(input_details[0]['index'], image)
     interpreter.invoke()
 
     output_data = interpreter.get_tensor(output_details[0]['index'])
     classes = ['BlackMeasles', 'BlackRot', 'HealthyGrapes', 'LeafBlight']
 
-    df = pd.DataFrame()
-    df['classes'] = classes
-    df['probabilidades (%)'] = 100*output_data[0]
+    df = pd.DataFrame({
+        'classes': classes,
+        'probabilidades (%)': 100 * output_data[0]
+    })
 
-    df = pd.DataFrame()
-    df['classes'] = classes
-    df['probabilidades (%)'] = 100*output_data[0]
-    
-    fig = px.bar(df,y='classes',x='probabilidades (%)',  orientation='h', text='probabilidades (%)', title='Probabilidade de Classes de Doenças em Uvas')
+    fig = px.bar(df, y='classes', x='probabilidades (%)', orientation='h',
+                 text='probabilidades (%)',
+                 title='Probabilidade de Classes de Doenças em Uvas')
 
-def main();
+    st.plotly_chart(fig)
+
+
+def main():
     st.set_page_config(
         page_title="Classifica Folhas de Videira",
-        page_icon="��",
+        page_icon="🍇",
     )
 
-    st.write("# Classifica Folhas de Videira! ��")
+    st.write("# Classifica Folhas de Videira! 🍇")
 
     # Carrega modelo
     interpreter = carrega_modelo()
 
     # Carrega imagem
-    Image = carrega_imagem()
+    image = carrega_imagem()
 
     # Classifica
     if image is not None:
+        previsao(interpreter, image)
 
-        previsao(interpreter, image):
 
 if __name__ == "__main__":
     main()
